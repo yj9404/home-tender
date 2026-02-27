@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { auth, db } from "@/lib/firebase/config";
-import { Share2, Link as LinkIcon, RefreshCcw, Hand, Handshake, CheckCircle2 } from "lucide-react";
-import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { Share2, Link as LinkIcon, RefreshCcw, Hand, Handshake, CheckCircle2, PowerOff } from "lucide-react";
+import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc } from "firebase/firestore";
 import { Session } from "@/types";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -84,6 +84,25 @@ export default function HostSessionPage() {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const endSession = async () => {
+        if (!activeSession) return;
+        if (!confirm("정말 현재 파티를 종료하시겠습니까? (이 작업은 되돌릴 수 없습니다.)")) return;
+        try {
+            setLoading(true);
+            const sessionRef = doc(db, "sessions", activeSession.id);
+            await updateDoc(sessionRef, {
+                expiresAt: new Date(Date.now() - 1000) // 과거 시간으로 덮어씌워 강제 만료
+            });
+            setActiveSession(null);
+            alert("파티가 종료되었습니다.");
+        } catch (err) {
+            console.error(err);
+            alert("파티 종료에 실패했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading) return <div className="text-gray-500 animate-pulse">Loading...</div>;
 
     return (
@@ -141,6 +160,14 @@ export default function HostSessionPage() {
                             {copied ? "복사됨! ✅" : "링크 복사하기"}
                         </button>
                     </div>
+
+                    <button
+                        onClick={endSession}
+                        disabled={loading}
+                        className="w-full flex items-center justify-center gap-2 bg-surface/50 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 text-gray-400 hover:text-red-400 py-3 rounded-xl font-bold transition-all disabled:opacity-50 mt-[-8px]"
+                    >
+                        <PowerOff className="w-4 h-4" /> 파티 종료하기
+                    </button>
 
                     <div className="flex flex-col items-center gap-2 pt-6 border-t border-white/10">
                         <p className="text-xs text-gray-400 text-left w-full flex items-start gap-2 leading-relaxed">
