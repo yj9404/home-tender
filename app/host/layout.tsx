@@ -37,7 +37,7 @@ export default function HostLayout({
 
     const navItems = [
         { name: "주문 큐", path: "/host", icon: Martini },
-        { name: "재료 관리", path: "/host/ingredients", icon: Settings2 },
+        { name: "재료 관리", path: "/host/stock", icon: Settings2 },
         { name: "초대 링크", path: "/host/session", icon: Share2 },
     ];
 

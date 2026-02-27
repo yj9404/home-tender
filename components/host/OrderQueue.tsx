@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Order, Cocktail } from "@/types";
-import { subscribeOrders, updateOrderStatus } from "@/lib/firebase/orders";
+import { subscribeOrders } from "@/lib/firebase/orders";
 import { auth } from "@/lib/firebase/config";
 import { getCocktail } from "@/lib/firebase/cocktails";
 import { Clock, CheckCircle2, ChefHat, Info, X } from "lucide-react";

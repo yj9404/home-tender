@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { auth, db } from "@/lib/firebase/config";
-import { Share2, Link as LinkIcon, RefreshCcw, Hand, Handshake, CheckCircle2, PowerOff } from "lucide-react";
-import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc } from "firebase/firestore";
+import { Share2, Link as LinkIcon, Handshake, CheckCircle2, PowerOff } from "lucide-react";
+import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc, Timestamp } from "firebase/firestore";
 import { Session } from "@/types";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -63,7 +63,7 @@ export default function HostSessionPage() {
                 token: data.token,
                 isOrderPaused: false,
                 expiresAt: data.expiresAt,
-                createdAt: new Date() as any,
+                createdAt: new Date() as unknown as Timestamp,
             });
 
         } catch (err) {
@@ -136,8 +136,8 @@ export default function HostSessionPage() {
                         <h3 className="text-xl font-bold text-white mb-2">세션이 활성화되었습니다!</h3>
                         <p className="text-sm text-gray-400">
                             만료: {activeSession.expiresAt ? format(
-                                typeof (activeSession.expiresAt as any).toDate === 'function'
-                                    ? (activeSession.expiresAt as any).toDate()
+                                typeof (activeSession.expiresAt as unknown) === 'object' && activeSession.expiresAt !== null && 'toDate' in (activeSession.expiresAt as object) && typeof (activeSession.expiresAt as { toDate: () => Date }).toDate === 'function'
+                                    ? (activeSession.expiresAt as { toDate: () => Date }).toDate()
                                     : new Date(activeSession.expiresAt as unknown as string),
                                 "M월 d일 a h:mm", { locale: ko }
                             ) : "로딩중..."}

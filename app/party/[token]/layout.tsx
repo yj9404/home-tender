@@ -34,8 +34,8 @@ export default function GuestLayout({
                 }
                 const data = await res.json();
                 setSessionInfo(data);
-            } catch (err: any) {
-                setError(err.message);
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : String(err));
             } finally {
                 setLoading(false);
             }

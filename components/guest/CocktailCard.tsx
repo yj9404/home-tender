@@ -1,7 +1,7 @@
 "use client";
 
 import { Cocktail } from "@/types";
-import { GlassWater, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 export default function CocktailCard({
     cocktail,

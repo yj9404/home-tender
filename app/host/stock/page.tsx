@@ -6,7 +6,7 @@ import { subscribeIngredients } from "@/lib/firebase/ingredients";
 import { getAllCocktails } from "@/lib/firebase/cocktails";
 import { db } from "@/lib/firebase/config";
 import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
-import { Settings2, Search, AlertCircle, RefreshCcw } from "lucide-react";
+import { Search, AlertCircle, RefreshCcw } from "lucide-react";
 
 const CATEGORY_MAP: Record<string, string> = {
     base: "기주",

@@ -68,12 +68,13 @@ export default function OrderModal({
             onClose();
             // 주문 완료 후 내 주문 현황 페이지로 이동
             router.push(`/party/${sessionToken}/my-orders`);
-        } catch (err: any) {
-            if (err.message === "Session expired") {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            if (message === "Session expired") {
                 alert("세션이 만료되었습니다. 호스트에게 새로운 링크를 받아주세요.");
                 window.location.reload();
             } else {
-                alert(err.message);
+                alert(message);
             }
         } finally {
             setLoading(false);
