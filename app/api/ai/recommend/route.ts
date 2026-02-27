@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
             .where("isActive", "==", true)
             .get();
 
-        const availableCocktails = cocktailsSnap.docs.map((doc) => {
+        const availableCocktails = cocktailsSnap.docs.map((doc: any) => {
             const d = doc.data();
             return {
                 name: d.name,

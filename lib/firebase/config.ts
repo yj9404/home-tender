@@ -13,8 +13,18 @@ const firebaseConfig = {
 };
 
 // Next.js 핫리로드 시 중복 초기화 방지
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().length > 0 ? getApp() : (function () {
+    if (!firebaseConfig.apiKey) {
+        return null;
+    }
+    try {
+        return initializeApp(firebaseConfig);
+    } catch (err) {
+        console.error("Firebase Client SDK initialization error:", err);
+        return null;
+    }
+})();
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = app ? getAuth(app) : (null as any);
+export const db = app ? getFirestore(app) : (null as any);
 export default app;

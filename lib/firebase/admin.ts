@@ -10,17 +10,31 @@ function getAdminApp(): App {
         return getApps()[0];
     }
 
-    adminApp = initializeApp({
-        credential: cert({
-            projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-            // \n을 실제 개행으로 변환 (환경변수 특성상 이스케이프 처리 필요)
-            privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-        }),
-    });
+    const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
-    return adminApp;
+    if (!projectId || !clientEmail || !privateKey) {
+        if (process.env.NODE_ENV === "production") {
+            console.warn("Firebase Admin environment variables are missing.");
+        }
+        return null as any;
+    }
+
+    try {
+        return initializeApp({
+            credential: cert({
+                projectId,
+                clientEmail,
+                privateKey,
+            }),
+        });
+    } catch (err) {
+        console.error("Firebase Admin initialization error:", err);
+        return null as any;
+    }
 }
 
-export const adminDb = getFirestore(getAdminApp());
-export const adminAuth = getAuth(getAdminApp());
+const app = getAdminApp();
+export const adminDb = app ? getFirestore(app) : (null as any);
+export const adminAuth = app ? getAuth(app) : (null as any);
