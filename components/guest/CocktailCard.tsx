@@ -52,7 +52,7 @@ export default function CocktailCard({
                         {cocktail.name}
                     </h3>
                     <span className={`text-[10px] px-2.5 py-1 rounded-full border ${isAvailable ? "font-bold text-white bg-white/10 border-white/5" : "font-medium text-gray-500 bg-white/5 border-transparent"}`}>
-                        {cocktail.abv}%
+                        {cocktail.abv.includes('%') ? cocktail.abv : `${cocktail.abv}%`}
                     </span>
                 </div>
 

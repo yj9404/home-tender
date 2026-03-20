@@ -122,7 +122,7 @@ export default function OrderModal({
                     {cocktail.name}
                 </h2>
                 <p className="text-sm text-gray-400 mb-6 flex gap-2 font-medium">
-                    <span>{cocktail.abv}% ABV</span> • <span>{cocktail.flavorTags.join(", ")}</span>
+                    <span>{cocktail.abv.includes('%') ? cocktail.abv : `${cocktail.abv}%`} ABV</span> • <span>{cocktail.flavorTags.join(", ")}</span>
                 </p>
 
                 <div className="space-y-6">
