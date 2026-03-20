@@ -12,7 +12,10 @@ function getAdminApp(): App {
 
     const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
+    const rawKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+    const privateKey = rawKey
+        ? rawKey.replace(/^"|"$/g, "").replace(/\\n/g, "\n")
+        : undefined;
 
     if (!projectId || !clientEmail || !privateKey) {
         if (process.env.NODE_ENV === "production") {
