@@ -58,7 +58,7 @@ ${JSON.stringify(availableCocktails, null, 2)}
 6. 추천 형식: **칵테일명** - 설명 (도수: XX%, 특징: 태그들)`;
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash", // gemini-2.5-flash was likely a typo as it doesn't exist yet, using 1.5-flash as default stable
+            model: "gemini-2.5-flash",
             systemInstruction: systemPrompt,
         });
 
