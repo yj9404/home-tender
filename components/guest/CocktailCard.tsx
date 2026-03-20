@@ -58,7 +58,9 @@ export default function CocktailCard({
 
                 {isAvailable ? (
                     <>
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">{cocktail.note || "새콤 달콤 칵테일"}</p>
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">
+                            {cocktail.note || `${cocktail.baseSpirits.join(", ")} 베이스의 ${cocktail.flavorTags.join(", ")} 칵테일`}
+                        </p>
                         <div className="flex flex-wrap gap-1 mt-auto pt-2">
                             {cocktail.flavorTags.slice(0, 3).map((tag, i) => (
                                 <span key={i} className="text-[10px] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full shadow-inner">

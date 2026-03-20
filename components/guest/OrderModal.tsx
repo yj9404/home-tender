@@ -132,7 +132,9 @@ export default function OrderModal({
                             Recipe Preview
                         </h4>
                         <div className="bg-black/30 p-4 rounded-2xl border border-white/5 space-y-2">
-                            <p className="text-sm text-gray-400 text-pre-wrap">{cocktail.note || "새콤 달콤 칵테일"}</p>
+                            <p className="text-sm text-gray-400 text-pre-wrap">
+                                {cocktail.note || `${cocktail.baseSpirits.join(", ")} 베이스의 ${cocktail.flavorTags.join(", ")} 칵테일입니다.`}
+                            </p>
                         </div>
                     </div>
 
