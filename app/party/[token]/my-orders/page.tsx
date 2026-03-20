@@ -94,7 +94,7 @@ export default function MyOrdersPage({ params }: { params: Promise<{ token: stri
                             <div>
                                 <h3 className="text-xl font-bold mb-1 text-white">{o.cocktailName}</h3>
                                 <p className="text-xs text-gray-400">
-                                    {o.createdAt ? formatDistanceToNow(o.createdAt.toDate(), { addSuffix: true, locale: ko }) : ""}
+                                    {o.createdAt ? formatDistanceToNow(Math.min(Date.now(), o.createdAt.toDate().getTime()), { addSuffix: true, locale: ko }) : ""}
                                 </p>
                             </div>
 

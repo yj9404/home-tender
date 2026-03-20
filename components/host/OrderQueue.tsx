@@ -101,43 +101,62 @@ export default function OrderQueue({ sessionId }: OrderProps) {
 
             {/* Recipe Modal */}
             {modalOpen && selectedCocktail && (
-                <div className="modal-backdrop" onClick={() => setModalOpen(false)}>
-                    <div className="modal-content relative p-6 glass-panel border-primary/20 shadow-2xl md:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+                <div
+                    className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm transition-opacity"
+                    onClick={() => setModalOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-2xl glass-panel p-8 rounded-t-[2.5rem] border-t border-primary/20 shadow-2xl animate-[slideUp_0.4s_ease-out] relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Handle bar for visual cue */}
+                        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
+
                         <button
                             onClick={() => setModalOpen(false)}
-                            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white bg-black/50 rounded-full"
+                            className="absolute top-6 right-6 p-2 text-gray-400 hover:text-white bg-black/40 rounded-full transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
-                        <h2 className="text-2xl font-bold mb-1 text-primary">{selectedCocktail.name}</h2>
-                        <p className="text-sm text-gray-400 mb-6 flex gap-2 font-medium">단수: {selectedCocktail.abv}</p>
 
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-6">
                             <div>
-                                <h4 className="text-sm font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">기주</h4>
-                                <p className="text-sm">{selectedCocktail.baseSpirits.join(", ") || "없음"}</p>
+                                <h2 className="text-3xl font-black mb-1 text-primary tracking-tight">{selectedCocktail.name}</h2>
+                                <p className="text-sm text-gray-400 font-medium">도수: {selectedCocktail.abv}</p>
                             </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">부재료</h4>
-                                <p className="text-sm">
-                                    {[
-                                        ...selectedCocktail.ingredients.fruits,
-                                        ...selectedCocktail.ingredients.beverages,
-                                        ...selectedCocktail.ingredients.herbs,
-                                        ...selectedCocktail.ingredients.others,
-                                    ].join(", ") || "없음"}
-                                </p>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">기주</h4>
+                                    <p className="text-sm font-medium text-gray-200">{selectedCocktail.baseSpirits.join(", ") || "없음"}</p>
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">부재료</h4>
+                                    <p className="text-sm font-medium text-gray-200">
+                                        {[
+                                            ...selectedCocktail.ingredients.fruits,
+                                            ...selectedCocktail.ingredients.beverages,
+                                            ...selectedCocktail.ingredients.herbs,
+                                            ...selectedCocktail.ingredients.others,
+                                        ].join(", ") || "없음"}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 mt-4">
-                                <h4 className="text-sm font-semibold text-primary/80 mb-2 flex items-center gap-2">
-                                    <ChefHat className="w-4 h-4" /> 제조 레시피
+
+                            <div className="bg-primary/5 p-6 rounded-3xl border border-primary/10">
+                                <h4 className="text-sm font-bold text-primary/90 mb-3 flex items-center gap-2">
+                                    <ChefHat className="w-5 h-5" /> 제조 레시피
                                 </h4>
-                                <pre className="text-sm whitespace-pre-wrap font-sans text-gray-200">
+                                <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium text-gray-200">
                                     {selectedCocktail.recipe}
-                                </pre>
+                                </div>
                             </div>
+
                             {selectedCocktail.note && (
-                                <p className="text-xs text-primary/60 italic">💡 {selectedCocktail.note}</p>
+                                <div className="flex items-start gap-2 text-xs text-primary/70 bg-primary/5 p-3 rounded-xl italic">
+                                    <span>💡</span>
+                                    <p>{selectedCocktail.note}</p>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -159,7 +178,7 @@ function OrderCard({
     isPast?: boolean;
 }) {
     const timeStr = order.createdAt
-        ? formatDistanceToNow(order.createdAt.toDate(), { addSuffix: true, locale: ko })
+        ? formatDistanceToNow(Math.min(Date.now(), order.createdAt.toDate().getTime()), { addSuffix: true, locale: ko })
         : "";
 
     return (
@@ -206,7 +225,7 @@ function OrderCard({
                             onClick={() => onStatus(order.id, "done")}
                             className="flex-1 py-3 bg-green-500/20 text-green-400 font-semibold rounded-xl hover:bg-green-500 hover:text-black transition-colors text-sm shadow-sm"
                         >
-                            서빙 완료
+                            제조 완료
                         </button>
                     )}
                 </div>
