@@ -260,9 +260,9 @@ async function main() {
     console.log("🚀 HomeTender Seed 스크립트 시작");
     console.log("📂 Firebase Project:", process.env.FIREBASE_ADMIN_PROJECT_ID);
 
-    const csvPath = path.resolve(process.cwd(), "칵테일.csv");
+    const csvPath = path.resolve(process.cwd(), "cocktails.csv");
     if (!fs.existsSync(csvPath)) {
-        console.error("❌ 칵테일.csv 파일을 찾을 수 없습니다:", csvPath);
+        console.error("❌ cocktails.csv 파일을 찾을 수 없습니다:", csvPath);
         process.exit(1);
     }
 
@@ -272,12 +272,21 @@ async function main() {
     const ingredients = extractIngredients(cocktails);
     console.log(`📊 추출된 재료: ${ingredients.length}개`);
 
-    // 기존 데이터 확인
-    const existingCocktails = await db.collection("cocktails").limit(1).get();
+    // 기존 데이터 삭제
+    const existingCocktails = await db.collection("cocktails").get();
     if (!existingCocktails.empty) {
-        console.log("\n⚠️  이미 칵테일 데이터가 존재합니다.");
-        console.log("   덮어쓰려면 Firestore 콘솔에서 컬렉션을 먼저 삭제하세요.");
-        process.exit(0);
+        console.log("\n🧹 기존 칵테일 데이터를 삭제합니다...");
+        const batch = db.batch();
+        existingCocktails.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+    }
+
+    const existingIngredients = await db.collection("ingredients").get();
+    if (!existingIngredients.empty) {
+        console.log("🧹 기존 재료 데이터를 삭제합니다...");
+        const batch = db.batch();
+        existingIngredients.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
     }
 
     await seedCocktails(cocktails);
