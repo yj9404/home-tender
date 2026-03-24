@@ -48,25 +48,39 @@ interface CocktailSeed {
     isActive: boolean;
 }
 
-// CSV 파싱 유틸: 셀 안의 쉼표 처리
-function parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let current = "";
+// CSV 전체 내용을 파싱 (개행문자가 포함된 셀 지원)
+function parseCSVContent(content: string): string[][] {
+    const rows: string[][] = [];
+    let currentRow: string[] = [];
+    let currentCell = "";
     let inQuotes = false;
 
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
+    for (let i = 0; i < content.length; i++) {
+        const char = content[i];
+
         if (char === '"') {
             inQuotes = !inQuotes;
         } else if (char === "," && !inQuotes) {
-            result.push(current.trim());
-            current = "";
+            currentRow.push(currentCell.trim());
+            currentCell = "";
+        } else if (char === "\n" && !inQuotes) {
+            currentRow.push(currentCell.trim());
+            rows.push(currentRow);
+            currentRow = [];
+            currentCell = "";
+        } else if (char === "\r" && !inQuotes) {
+            // \r 무시
         } else {
-            current += char;
+            currentCell += char;
         }
     }
-    result.push(current.trim());
-    return result;
+    
+    if (currentCell || currentRow.length > 0) {
+        currentRow.push(currentCell.trim());
+        rows.push(currentRow);
+    }
+    
+    return rows;
 }
 
 function parseIngredientList(raw: string): string[] {
@@ -133,15 +147,11 @@ function getFlavorTags(name: string, abv: string): string[] {
 // CSV를 읽어 칵테일 데이터 배열로 파싱
 function parseCocktailCSV(csvPath: string): CocktailSeed[] {
     const content = fs.readFileSync(csvPath, "utf-8");
-    const lines = content.split("\n").slice(1); // 헤더 제거
+    const rows = parseCSVContent(content).slice(1); // 헤더 제거
 
     const cocktails: CocktailSeed[] = [];
 
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-
-        const cols = parseCSVLine(trimmed);
+    for (const cols of rows) {
         if (cols.length < 9) continue;
 
         const [name, spirits, fruits, beverages, herbs, others, note, abv, recipe] = cols;

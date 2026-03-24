@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
-import { Martini, Settings2, Share2, LogOut } from "lucide-react";
+import { Martini, Settings2, Share2, LogOut, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { signOutUser } from "@/lib/firebase/auth";
 
@@ -37,6 +37,7 @@ export default function HostLayout({
 
     const navItems = [
         { name: "주문 큐", path: "/host", icon: Martini },
+        { name: "메뉴(기주)", path: "/host/cocktails", icon: BookOpen },
         { name: "재료 관리", path: "/host/stock", icon: Settings2 },
         { name: "초대 링크", path: "/host/session", icon: Share2 },
     ];
@@ -73,6 +74,7 @@ export default function HostLayout({
                     const Icon = item.icon;
                     const isActive = pathname === item.path;
                     let nameEn = "Queue";
+                    if (item.name === "메뉴(기주)") nameEn = "Recipe";
                     if (item.name === "재료 관리") nameEn = "Stock";
                     if (item.name === "초대 링크") nameEn = "Invite";
 

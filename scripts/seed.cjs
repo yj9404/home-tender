@@ -47,23 +47,37 @@ const db = getFirestore();
 
 // ─── CSV 파싱 ─────────────────────────────────────────────────────────────────
 
-function parseCSVLine(line) {
-    const result = [];
-    let current = "";
+function parseCSVContent(content) {
+    const rows = [];
+    let currentRow = [];
+    let currentCell = "";
     let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
+
+    for (let i = 0; i < content.length; i++) {
+        const char = content[i];
         if (char === '"') {
             inQuotes = !inQuotes;
         } else if (char === "," && !inQuotes) {
-            result.push(current.trim());
-            current = "";
+            currentRow.push(currentCell.trim());
+            currentCell = "";
+        } else if (char === "\n" && !inQuotes) {
+            currentRow.push(currentCell.trim());
+            rows.push(currentRow);
+            currentRow = [];
+            currentCell = "";
+        } else if (char === "\r" && !inQuotes) {
+            // 무시
         } else {
-            current += char;
+            currentCell += char;
         }
     }
-    result.push(current.trim());
-    return result;
+    
+    if (currentCell || currentRow.length > 0) {
+        currentRow.push(currentCell.trim());
+        rows.push(currentRow);
+    }
+    
+    return rows;
 }
 
 function parseList(raw) {
@@ -104,13 +118,10 @@ const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1514362545857-3bc16c4c7
 
 function parseCocktailCSV(csvPath) {
     const content = fs.readFileSync(csvPath, "utf-8");
-    const lines = content.split(/\r?\n/).slice(1);
+    const rows = parseCSVContent(content).slice(1);
     const cocktails = [];
 
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        const cols = parseCSVLine(trimmed);
+    for (const cols of rows) {
         if (cols.length < 9) continue;
 
         const [name, spirits, fruits, beverages, herbs, others, note, abv, recipe] = cols;
@@ -164,9 +175,9 @@ async function main() {
     console.log("🚀 HomeTender Seed 스크립트 시작");
     console.log("📂 Firebase Project:", process.env.FIREBASE_ADMIN_PROJECT_ID);
 
-    const csvPath = path.resolve(process.cwd(), "칵테일.csv");
+    const csvPath = path.resolve(process.cwd(), "cocktails.csv");
     if (!fs.existsSync(csvPath)) {
-        console.error("❌ 칵테일.csv 파일을 찾을 수 없습니다:", csvPath);
+        console.error("❌ cocktails.csv 파일을 찾을 수 없습니다:", csvPath);
         process.exit(1);
     }
 
@@ -176,12 +187,21 @@ async function main() {
     const ingredients = extractIngredients(cocktails);
     console.log(`📊 추출된 재료: ${ingredients.length}개`);
 
-    // 기존 데이터 확인
-    const existing = await db.collection("cocktails").limit(1).get();
-    if (!existing.empty) {
-        console.log("\n⚠️  이미 칵테일 데이터가 존재합니다. 건너뜁니다.");
-        console.log("   재입력하려면 Firestore 콘솔에서 컬렉션을 삭제 후 재실행하세요.");
-        process.exit(0);
+    // 기존 데이터 삭제
+    const existingCocktails = await db.collection("cocktails").get();
+    if (!existingCocktails.empty) {
+        console.log("\n🧹 기존 칵테일 데이터를 삭제합니다...");
+        let delBatch = db.batch();
+        existingCocktails.docs.forEach(doc => delBatch.delete(doc.ref));
+        await delBatch.commit();
+    }
+
+    const existingIngredients = await db.collection("ingredients").get();
+    if (!existingIngredients.empty) {
+        console.log("🧹 기존 재료 데이터를 삭제합니다...");
+        let delBatch = db.batch();
+        existingIngredients.docs.forEach(doc => delBatch.delete(doc.ref));
+        await delBatch.commit();
     }
 
     // 칵테일 업로드 (Firestore batch는 500개 제한)
