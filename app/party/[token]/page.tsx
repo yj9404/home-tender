@@ -2,28 +2,50 @@
 
 import { useEffect, useState } from "react";
 import { Cocktail } from "@/types";
-import { subscribeCocktails } from "@/lib/firebase/cocktails";
+import { subscribeHostCocktails } from "@/lib/firebase/cocktails";
 import CocktailCard from "@/components/guest/CocktailCard";
 import OrderModal from "@/components/guest/OrderModal";
-import { GlassWater, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, limit, getDocs } from "firebase/firestore";
 
 export default function GuestMenuPage({ params }: { params: Promise<{ token: string }> }) {
     const [cocktails, setCocktails] = useState<Cocktail[]>([]);
     const [token, setToken] = useState("");
+    const [hostUid, setHostUid] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<"available" | "all">("available");
-
     const [selected, setSelected] = useState<Cocktail | null>(null);
 
+    // 토큰으로 hostUid 조회 (클라이언트 Firestore 직접)
     useEffect(() => {
-        params.then((p) => setToken(p.token));
+        params.then(async (p) => {
+            setToken(p.token);
+            try {
+                const snap = await getDocs(
+                    query(
+                        collection(db, "sessions"),
+                        where("token", "==", p.token),
+                        limit(1)
+                    )
+                );
+                if (!snap.empty) {
+                    setHostUid(snap.docs[0].data().hostUid as string);
+                }
+            } catch (err) {
+                console.error("Failed to resolve hostUid from session:", err);
+            }
+        });
+    }, [params]);
 
-        // 전체 칵테일 구독 (isAvailable 판단 로컬에서)
-        const unsub = subscribeCocktails(false, (data) => {
+    // hostUid 확정 후 해당 호스트 칵테일 구독
+    useEffect(() => {
+        if (!hostUid) return;
+        const unsub = subscribeHostCocktails(hostUid, false, (data) => {
             setCocktails(data);
         });
         return () => unsub();
-    }, [params]);
+    }, [hostUid]);
 
     const filtered = cocktails.filter((c) => {
         const matchSearch = c.name.toLowerCase().includes(search.toLowerCase());
@@ -58,7 +80,7 @@ export default function GuestMenuPage({ params }: { params: Promise<{ token: str
             <div className="grid gap-4">
                 {filtered.length === 0 ? (
                     <div className="py-12 text-center text-gray-500">
-                        주문 가능한 칵테일이 없습니다.
+                        {hostUid ? "주문 가능한 칵테일이 없습니다." : "메뉴를 불러오는 중..."}
                     </div>
                 ) : (
                     filtered.map((c) => (

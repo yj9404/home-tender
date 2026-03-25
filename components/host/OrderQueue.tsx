@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Order, Cocktail } from "@/types";
 import { subscribeOrders } from "@/lib/firebase/orders";
 import { auth } from "@/lib/firebase/config";
-import { getCocktail } from "@/lib/firebase/cocktails";
+import { db } from "@/lib/firebase/config";
 import { Clock, CheckCircle2, ChefHat, Info, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -48,10 +48,17 @@ export default function OrderQueue({ sessionId }: OrderProps) {
     };
 
     const openRecipeModal = async (cocktailId: string) => {
-        const c = await getCocktail(cocktailId);
-        if (c) {
-            setSelectedCocktail(c);
-            setModalOpen(true);
+        const user = auth.currentUser;
+        if (!user) return;
+        try {
+            const { getDoc, doc } = await import("firebase/firestore");
+            const snap = await getDoc(doc(db, "hosts", user.uid, "cocktails", cocktailId));
+            if (snap.exists()) {
+                setSelectedCocktail({ id: snap.id, ...snap.data() } as Cocktail);
+                setModalOpen(true);
+            }
+        } catch (err) {
+            console.error("Failed to fetch cocktail recipe:", err);
         }
     };
 

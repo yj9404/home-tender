@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/lib/context/AuthContext";
 import { Ingredient, Cocktail } from "@/types";
-import { subscribeIngredients } from "@/lib/firebase/ingredients";
-import { getAllCocktails } from "@/lib/firebase/cocktails";
+import {
+    subscribeHostIngredients,
+    addHostIngredient,
+    deleteHostIngredient,
+    toggleHostSoldOut,
+    importSharedIngredientsToHost,
+} from "@/lib/firebase/ingredients";
+import { getHostCocktails, updateHostCocktailActive } from "@/lib/firebase/cocktails";
 import { db } from "@/lib/firebase/config";
-import { doc, writeBatch, serverTimestamp, deleteDoc, addDoc, collection } from "firebase/firestore";
-import { Search, AlertCircle, RefreshCcw, Plus, Trash2, X } from "lucide-react";
+import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
+import { Search, AlertCircle, RefreshCcw, Plus, Trash2, X, Download } from "lucide-react";
 
 const CATEGORY_MAP: Record<string, string> = {
     base: "기주",
@@ -17,43 +24,70 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 export default function IngredientsPage() {
+    const { user } = useAuth();
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [cocktails, setCocktails] = useState<Cocktail[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [updating, setUpdating] = useState<string | null>(null); // 아이템 ID
+    const [updating, setUpdating] = useState<string | null>(null);
+    const [importing, setImporting] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newName, setNewName] = useState("");
     const [newCategory, setNewCategory] = useState<string>("base");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    useEffect(() => {
+        if (!user) return;
+
+        // 재료 실시간 구독
+        const unsub = subscribeHostIngredients(user.uid, (data) => {
+            setIngredients(data);
+            setLoading(false);
+        });
+
+        // 칵테일 전체 로드 (isActive 재계산용)
+        getHostCocktails(user.uid).then((c) => setCocktails(c));
+
+        return () => unsub();
+    }, [user]);
+
     const handleDelete = async (e: React.MouseEvent, ingredient: Ingredient) => {
         e.stopPropagation();
-        if (updating) return;
+        if (!user || updating) return;
         if (!confirm(`'${ingredient.name}' 재료를 목록에서 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
 
         try {
             setUpdating(ingredient.id);
             const batch = writeBatch(db);
 
-            batch.delete(doc(db, "ingredients", ingredient.id));
+            // 재료 삭제
+            batch.delete(doc(db, "hosts", user.uid, "ingredients", ingredient.id));
 
+            // 품절 재료였다면 연관 칵테일 isActive 재계산
             if (ingredient.isSoldOut) {
-                const currentSoldOutNames = new Set(ingredients.filter(i => i.isSoldOut && i.id !== ingredient.id).map(i => i.name));
+                const currentSoldOutNames = new Set(
+                    ingredients.filter(i => i.isSoldOut && i.id !== ingredient.id).map(i => i.name)
+                );
                 for (const c of cocktails) {
-                    const required = [...c.baseSpirits, ...(c.ingredients?.fruits || []), ...(c.ingredients?.beverages || []), ...(c.ingredients?.herbs || []), ...(c.ingredients?.others || [])];
+                    const required = [
+                        ...c.baseSpirits,
+                        ...(c.ingredients?.fruits || []),
+                        ...(c.ingredients?.beverages || []),
+                        ...(c.ingredients?.herbs || []),
+                        ...(c.ingredients?.others || []),
+                    ];
                     const isNowActive = !required.some((reqName) => currentSoldOutNames.has(reqName));
                     if (c.isActive !== isNowActive) {
-                        batch.update(doc(db, "cocktails", c.id), { isActive: isNowActive });
+                        batch.update(doc(db, "hosts", user.uid, "cocktails", c.id), { isActive: isNowActive });
                         c.isActive = isNowActive;
                     }
                 }
             }
 
             await batch.commit();
-        } catch(err) {
-             console.error(err);
-             alert("삭제에 실패했습니다.");
+        } catch (err) {
+            console.error(err);
+            alert("삭제에 실패했습니다.");
         } finally {
             setUpdating(null);
         }
@@ -61,9 +95,10 @@ export default function IngredientsPage() {
 
     const handleAddIngredient = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user) return;
         const trimmed = newName.trim();
         if (!trimmed) return;
-        
+
         if (ingredients.some(i => i.name === trimmed)) {
             alert("이미 존재하는 재료입니다.");
             return;
@@ -71,16 +106,11 @@ export default function IngredientsPage() {
 
         try {
             setIsSubmitting(true);
-            await addDoc(collection(db, "ingredients"), {
-                name: trimmed,
-                category: newCategory,
-                isSoldOut: false,
-                updatedAt: serverTimestamp()
-            });
+            await addHostIngredient(user.uid, trimmed, newCategory);
             setIsAddModalOpen(false);
             setNewName("");
             setNewCategory("base");
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             alert("추가에 실패했습니다.");
         } finally {
@@ -88,40 +118,30 @@ export default function IngredientsPage() {
         }
     };
 
-    useEffect(() => {
-        // 재료 구독
-        const unsub = subscribeIngredients((data) => {
-            setIngredients(data);
-        });
+    const handleImport = async () => {
+        if (!user) return;
+        if (!confirm("공유 재료 카탈로그 전체를 내 재고 목록으로 가져올까요?")) return;
+        try {
+            setImporting(true);
+            const count = await importSharedIngredientsToHost(user.uid);
+            if (count === 0) alert("가져올 공유 재료가 없습니다.");
+            else alert(`${count}개의 재료를 가져왔습니다.`);
+        } catch (err) {
+            console.error(err);
+            alert("가져오기 중 오류가 발생했습니다.");
+        } finally {
+            setImporting(false);
+        }
+    };
 
-        // 칵테일 전체 로드 (로컬에서 연산용)
-        getAllCocktails().then((c) => {
-            setCocktails(c);
-            setLoading(false);
-        });
-
-        return () => unsub();
-    }, []);
-
-    // 검색 및 그룹핑
-    const grouped = useMemo(() => {
-        const valid = ingredients.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
-
-        return valid.reduce((acc, curr) => {
-            if (!acc[curr.category]) acc[curr.category] = [];
-            acc[curr.category].push(curr);
-            return acc;
-        }, {} as Record<string, Ingredient[]>);
-    }, [ingredients, search]);
-
-    /** 
+    /**
      * 품절 토글 로직.
      * 1. 해당 재료의 isSoldOut을 뒤집음.
-     * 2. 전체 칵테일을 순회하며 isActive(주문 가능) 여부를 재계산함.
-     * 3. 변경된 내역을 Batch Write로 한 번에 반영함. (무료 티어 절약 및 속도 향상)
+     * 2. 호스트 본인의 칵테일을 순회하며 isActive 여부를 재계산.
+     * 3. 변경된 내역을 Batch Write로 한 번에 반영.
      */
     const handleToggle = async (ingredient: Ingredient) => {
-        if (updating) return; // 중복 클릭 방지
+        if (!user || updating) return;
         try {
             setUpdating(ingredient.id);
 
@@ -129,21 +149,20 @@ export default function IngredientsPage() {
             const batch = writeBatch(db);
 
             // 재료 업데이트
-            batch.update(doc(db, "ingredients", ingredient.id), {
+            batch.update(doc(db, "hosts", user.uid, "ingredients", ingredient.id), {
                 isSoldOut: nextSoldOut,
                 updatedAt: serverTimestamp(),
             });
 
-            // 재계산을 위한 임시 재료 맵 (품절된 재료 이름들의 Set)
+            // 품절 재료 이름 Set 재계산
             const currentSoldOutNames = new Set(
                 ingredients.filter(i => i.isSoldOut).map(i => i.name)
             );
             if (nextSoldOut) currentSoldOutNames.add(ingredient.name);
             else currentSoldOutNames.delete(ingredient.name);
 
-            // 연관 칵테일 업데이트
+            // 연관 칵테일 isActive 재계산
             for (const c of cocktails) {
-                // 이 칵테일의 필요 재료 파악
                 const required = [
                     ...c.baseSpirits,
                     ...c.ingredients.fruits,
@@ -151,22 +170,14 @@ export default function IngredientsPage() {
                     ...c.ingredients.herbs,
                     ...c.ingredients.others,
                 ];
-
-                // 칵테일의 새로운 활성화 상태 계산: 품절된 재료를 하나라도 쓰고 있으면 비활성화
                 const isNowActive = !required.some((reqName) => currentSoldOutNames.has(reqName));
-
-                // 기존 DB 상태와 다를 때만 업데이트 배포 (쓰기 비용 최소화)
                 if (c.isActive !== isNowActive) {
-                    batch.update(doc(db, "cocktails", c.id), {
-                        isActive: isNowActive,
-                    });
-                    // 로컬 상태도 업데이트
+                    batch.update(doc(db, "hosts", user.uid, "cocktails", c.id), { isActive: isNowActive });
                     c.isActive = isNowActive;
                 }
             }
 
             await batch.commit();
-
         } catch (err) {
             console.error(err);
             alert("업데이트에 실패했습니다.");
@@ -174,6 +185,17 @@ export default function IngredientsPage() {
             setUpdating(null);
         }
     };
+
+    const grouped = useMemo(() => {
+        const valid = ingredients.filter((i) =>
+            i.name.toLowerCase().includes(search.toLowerCase())
+        );
+        return valid.reduce((acc, curr) => {
+            if (!acc[curr.category]) acc[curr.category] = [];
+            acc[curr.category].push(curr);
+            return acc;
+        }, {} as Record<string, Ingredient[]>);
+    }, [ingredients, search]);
 
     if (loading) return <div className="text-gray-400 animate-pulse">Loading ingredients...</div>;
 
@@ -185,6 +207,25 @@ export default function IngredientsPage() {
                     품절 처리 시 해당 재료가 들어가는 모든 칵테일이 자동으로 손님 메뉴판에서 사라집니다.
                 </p>
             </div>
+
+            {/* 신규 호스트 온보딩 배너 */}
+            {!loading && ingredients.length === 0 && (
+                <div className="glass-panel border border-primary/30 bg-primary/5 rounded-2xl p-5 flex flex-col items-center gap-3 text-center animate-[slide-up_0.4s_ease-out] mx-2">
+                    <Download className="w-8 h-8 text-primary" />
+                    <div>
+                        <p className="font-bold text-white">아직 재고 목록이 없어요</p>
+                        <p className="text-gray-400 text-sm mt-1">공유 카탈로그에서 기본 재료를 가져오거나, 직접 추가해보세요.</p>
+                    </div>
+                    <button
+                        onClick={handleImport}
+                        disabled={importing}
+                        className="btn-primary px-6 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
+                    >
+                        <Download className="w-4 h-4" />
+                        {importing ? "가져오는 중..." : "공유 재료 가져오기"}
+                    </button>
+                </div>
+            )}
 
             {/* 검색 바 */}
             <div className="flex items-center gap-3 mb-6 mx-2">
@@ -200,7 +241,10 @@ export default function IngredientsPage() {
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-                <button onClick={() => setIsAddModalOpen(true)} className="bg-primary text-black p-3.5 rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex items-center justify-center flex-shrink-0">
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="bg-primary text-black p-3.5 rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex items-center justify-center flex-shrink-0"
+                >
                     <Plus className="w-5 h-5 font-bold" />
                 </button>
             </div>
@@ -234,7 +278,13 @@ export default function IngredientsPage() {
                                             ) : (
                                                 <div className="flex gap-2 items-center text-gray-500">
                                                     {item.isSoldOut && <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />}
-                                                    <button onClick={(e) => handleDelete(e, item)} className="p-1 hover:text-red-400 hover:bg-white/10 rounded transition-colors" title="삭제"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, item)}
+                                                        className="p-1 hover:text-red-400 hover:bg-white/10 rounded transition-colors"
+                                                        title="삭제"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -253,6 +303,7 @@ export default function IngredientsPage() {
                 })}
             </div>
 
+            {/* 재료 추가 모달 */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
@@ -265,7 +316,11 @@ export default function IngredientsPage() {
                         <form onSubmit={handleAddIngredient} className="p-5 space-y-5">
                             <div>
                                 <label className="block text-sm font-semibold text-primary mb-1.5">재료 카테고리</label>
-                                <select value={newCategory} onChange={e => setNewCategory(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary">
+                                <select
+                                    value={newCategory}
+                                    onChange={e => setNewCategory(e.target.value)}
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary"
+                                >
                                     {Object.entries(CATEGORY_MAP).map(([k, v]) => (
                                         <option key={k} value={k} className="bg-surface text-white">{v}</option>
                                     ))}
@@ -273,11 +328,32 @@ export default function IngredientsPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-primary mb-1.5">재료명</label>
-                                <input required autoFocus type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="예: 깔루아, 라임..." className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary" />
+                                <input
+                                    required
+                                    autoFocus
+                                    type="text"
+                                    value={newName}
+                                    onChange={e => setNewName(e.target.value)}
+                                    placeholder="예: 깔루아, 라임..."
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                                />
                             </div>
                             <div className="pt-2 flex gap-3">
-                                <button type="button" onClick={() => setIsAddModalOpen(false)} disabled={isSubmitting} className="flex-1 py-3.5 rounded-xl border border-white/10 text-gray-300 font-bold hover:bg-white/5 transition-colors">취소</button>
-                                <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 rounded-xl bg-primary text-black font-extrabold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all">{isSubmitting ? "추가 중..." : "추가하기"}</button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddModalOpen(false)}
+                                    disabled={isSubmitting}
+                                    className="flex-1 py-3.5 rounded-xl border border-white/10 text-gray-300 font-bold hover:bg-white/5 transition-colors"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-1 py-3.5 rounded-xl bg-primary text-black font-extrabold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all"
+                                >
+                                    {isSubmitting ? "추가 중..." : "추가하기"}
+                                </button>
                             </div>
                         </form>
                     </div>

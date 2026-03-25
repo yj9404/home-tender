@@ -95,6 +95,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             sessionId: doc.id,
+            hostUid: data.hostUid,
             isOrderPaused: data.isOrderPaused,
             expiresAt: expiresAt.toISOString(),
         });

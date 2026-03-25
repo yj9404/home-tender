@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Cocktail, Ingredient } from "@/types";
 import { X } from "lucide-react";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { getDocs, orderBy, query, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import MultiSelect from "./MultiSelect";
 
@@ -12,9 +12,10 @@ interface CocktailModalProps {
     onClose: () => void;
     onSave: (data: Partial<Cocktail>) => Promise<void>;
     cocktail: Cocktail | null;
+    hostUid: string;
 }
 
-export default function CocktailModal({ isOpen, onClose, onSave, cocktail }: CocktailModalProps) {
+export default function CocktailModal({ isOpen, onClose, onSave, cocktail, hostUid }: CocktailModalProps) {
     const [name, setName] = useState("");
     const [baseSpirits, setBaseSpirits] = useState<string[]>([]);
     const [fruits, setFruits] = useState<string[]>([]);
@@ -32,15 +33,16 @@ export default function CocktailModal({ isOpen, onClose, onSave, cocktail }: Coc
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || !hostUid) return;
 
         const fetchIngredients = async () => {
             try {
-                const q = query(collection(db, "ingredients"), orderBy("name"));
+                const col = collection(db, "hosts", hostUid, "ingredients");
+                const q = query(col, orderBy("name"));
                 const snap = await getDocs(q);
                 setAllIngredients(snap.docs.map(d => ({ id: d.id, ...d.data() } as Ingredient)));
             } catch (err) {
-                console.error("Failed to fetch ingredients:", err);
+                console.error("Failed to fetch host ingredients:", err);
             }
         };
 

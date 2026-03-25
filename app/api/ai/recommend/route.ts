@@ -24,8 +24,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid session" }, { status: 404 });
         }
 
-        // 현재 주문 가능한 칵테일만 RAG 컨텍스트로 사용
+        const sessionData = sessionSnap.docs[0].data();
+        const hostUid: string = sessionData.hostUid;
+
+        // 해당 호스트의 주문 가능한 칵테일만 RAG 컨텍스트로 사용
         const cocktailsSnap = await adminDb
+            .collection("hosts")
+            .doc(hostUid)
             .collection("cocktails")
             .where("isActive", "==", true)
             .get();

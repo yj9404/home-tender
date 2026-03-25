@@ -15,7 +15,7 @@ export default function GuestLayout({
 }) {
     const pathname = usePathname();
     const [token, setToken] = useState<string>("");
-    const [sessionInfo, setSessionInfo] = useState<{ isOrderPaused: boolean; expiresAt: string } | null>(null);
+    const [sessionInfo, setSessionInfo] = useState<{ hostUid: string; isOrderPaused: boolean; expiresAt: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [needsNickname, setNeedsNickname] = useState(false);
