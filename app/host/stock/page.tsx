@@ -187,8 +187,9 @@ export default function IngredientsPage() {
     };
 
     const grouped = useMemo(() => {
+        const lowerSearch = search.toLowerCase();
         const valid = ingredients.filter((i) =>
-            i.name.toLowerCase().includes(search.toLowerCase())
+            i.name.toLowerCase().includes(lowerSearch)
         );
         return valid.reduce((acc, curr) => {
             if (!acc[curr.category]) acc[curr.category] = [];
