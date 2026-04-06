@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { Cocktail } from "@/types";
 import {
@@ -80,23 +80,40 @@ export default function HostCocktailsPage() {
         setIsModalOpen(true);
     };
 
-    if (loading) return <div className="animate-pulse p-4 flex justify-center mt-10">칵테일 정보를 불러오는 중입니다...</div>;
+    const processedCocktails = useMemo(() => {
+        return cocktails.map(cocktail => {
+            const ingredientsList = [
+                ...(cocktail.ingredients?.fruits || []),
+                ...(cocktail.ingredients?.beverages || []),
+                ...(cocktail.ingredients?.herbs || []),
+                ...(cocktail.ingredients?.others || [])
+            ].filter(Boolean);
 
-    const filteredCocktails = cocktails.filter(cocktail => {
+            const allIngredientsText = ingredientsList.join(" ").toLowerCase();
+            const displayIngredients = ingredientsList.join(", ") || "-";
+
+            const baseSpiritsList = cocktail.baseSpirits || [];
+            const baseSpiritsText = baseSpiritsList.join(" ").toLowerCase();
+            const displayBaseSpirits = baseSpiritsList.join(", ") || "-";
+
+            const nameText = cocktail.name.toLowerCase();
+
+            return {
+                ...cocktail,
+                displayIngredients,
+                displayBaseSpirits,
+                searchableText: `${nameText} ${baseSpiritsText} ${allIngredientsText}`
+            };
+        });
+    }, [cocktails]);
+
+    const filteredCocktails = useMemo(() => {
         const term = searchTerm.toLowerCase();
-        if (!term) return true;
+        if (!term) return processedCocktails;
+        return processedCocktails.filter(c => c.searchableText.includes(term));
+    }, [processedCocktails, searchTerm]);
 
-        const allIngredientsText = [
-            ...(cocktail.ingredients?.fruits || []),
-            ...(cocktail.ingredients?.beverages || []),
-            ...(cocktail.ingredients?.herbs || []),
-            ...(cocktail.ingredients?.others || [])
-        ].filter(Boolean).join(" ").toLowerCase();
-        const baseSpiritsText = (cocktail.baseSpirits || []).join(" ").toLowerCase();
-        const nameText = cocktail.name.toLowerCase();
-
-        return nameText.includes(term) || baseSpiritsText.includes(term) || allIngredientsText.includes(term);
-    });
+    if (loading) return <div className="animate-pulse p-4 flex justify-center mt-10">칵테일 정보를 불러오는 중입니다...</div>;
 
     return (
         <div className="flex flex-col gap-6 mb-8 mt-2">
@@ -144,13 +161,6 @@ export default function HostCocktailsPage() {
 
             <div className="space-y-4">
                 {filteredCocktails.map(cocktail => {
-                    const allIngredients = [
-                        ...(cocktail.ingredients?.fruits || []),
-                        ...(cocktail.ingredients?.beverages || []),
-                        ...(cocktail.ingredients?.herbs || []),
-                        ...(cocktail.ingredients?.others || [])
-                    ].filter(Boolean);
-
                     return (
                         <div key={cocktail.id} className="glass-panel p-4 rounded-xl space-y-3 bg-surface/40 hover:bg-surface/50 transition-colors border border-white/5 relative group">
 
@@ -181,11 +191,11 @@ export default function HostCocktailsPage() {
                             <div className="space-y-2 mt-2 text-sm text-gray-300 bg-black/20 p-3 rounded-lg border border-black/10">
                                 <div className="flex items-start gap-3">
                                     <span className="font-semibold text-primary min-w-[2.5rem] mt-0.5">기주</span>
-                                    <span className="leading-snug">{(cocktail.baseSpirits || []).join(", ") || "-"}</span>
+                                    <span className="leading-snug">{cocktail.displayBaseSpirits}</span>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <span className="font-semibold text-primary min-w-[2.5rem] mt-0.5">재료</span>
-                                    <span className="leading-snug">{allIngredients.join(", ") || "-"}</span>
+                                    <span className="leading-snug">{cocktail.displayIngredients}</span>
                                 </div>
                             </div>
 
