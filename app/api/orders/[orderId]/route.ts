@@ -8,6 +8,11 @@ type Params = { params: Promise<{ orderId: string }> };
 /** PATCH /api/orders/[orderId] - 주문 상태/평가 변경 */
 export async function PATCH(req: NextRequest, { params }: Params) {
     try {
+        if (!adminDb || !adminAuth) {
+            console.error("Firebase Admin is not initialized");
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        }
+
         const { orderId } = await params;
         const body: UpdateOrderPayload & { sessionId: string } = await req.json();
         const { sessionId, status, rating } = body;

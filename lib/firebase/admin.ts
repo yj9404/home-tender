@@ -3,9 +3,7 @@ import { initializeApp, getApps, cert, App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 
-let adminApp: App;
-
-function getAdminApp(): App {
+function getAdminApp(): App | null {
     if (getApps().length > 0) {
         return getApps()[0];
     }
@@ -21,7 +19,7 @@ function getAdminApp(): App {
         if (process.env.NODE_ENV === "production") {
             console.warn("Firebase Admin environment variables are missing.");
         }
-        return null as any;
+        return null;
     }
 
     try {
@@ -34,10 +32,10 @@ function getAdminApp(): App {
         });
     } catch (err) {
         console.error("Firebase Admin initialization error:", err);
-        return null as any;
+        return null;
     }
 }
 
 const app = getAdminApp();
-export const adminDb = app ? getFirestore(app) : (null as any);
-export const adminAuth = app ? getAuth(app) : (null as any);
+export const adminDb = app ? getFirestore(app) : null;
+export const adminAuth = app ? getAuth(app) : null;

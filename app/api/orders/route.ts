@@ -6,6 +6,11 @@ import { CreateOrderPayload } from "@/types";
 /** POST /api/orders - 주문 생성 (Guest용) */
 export async function POST(req: NextRequest) {
     try {
+        if (!adminDb) {
+            console.error("adminDb is not initialized");
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        }
+
         const body: CreateOrderPayload = await req.json();
         const { sessionToken, guestId, guestName, cocktailId, cocktailName, customizations } = body;
 
