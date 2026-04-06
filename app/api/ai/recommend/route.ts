@@ -10,6 +10,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 /** POST /api/ai/recommend - AI 바텐더 추천 */
 export async function POST(req: NextRequest) {
     try {
+        if (!adminDb) {
+            console.error("adminDb is not initialized");
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        }
+
         const body: AIRecommendPayload = await req.json();
         const { sessionToken, message, history } = body;
 
