@@ -65,9 +65,13 @@ export default function IngredientsPage() {
 
             // 품절 재료였다면 연관 칵테일 isActive 재계산
             if (ingredient.isSoldOut) {
-                const currentSoldOutNames = new Set(
-                    ingredients.filter(i => i.isSoldOut && i.id !== ingredient.id).map(i => i.name)
-                );
+                const currentSoldOutNames = new Set<string>();
+                for (let i = 0; i < ingredients.length; i++) {
+                    const item = ingredients[i];
+                    if (item.isSoldOut && item.id !== ingredient.id) {
+                        currentSoldOutNames.add(item.name);
+                    }
+                }
                 for (const c of cocktails) {
                     const required = [
                         ...c.baseSpirits,
@@ -155,9 +159,13 @@ export default function IngredientsPage() {
             });
 
             // 품절 재료 이름 Set 재계산
-            const currentSoldOutNames = new Set(
-                ingredients.filter(i => i.isSoldOut).map(i => i.name)
-            );
+            const currentSoldOutNames = new Set<string>();
+            for (let i = 0; i < ingredients.length; i++) {
+                const item = ingredients[i];
+                if (item.isSoldOut) {
+                    currentSoldOutNames.add(item.name);
+                }
+            }
             if (nextSoldOut) currentSoldOutNames.add(ingredient.name);
             else currentSoldOutNames.delete(ingredient.name);
 
