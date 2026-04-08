@@ -16,6 +16,11 @@ function generateToken(): string {
 /** POST /api/session - 세션 생성 */
 export async function POST(req: NextRequest) {
     try {
+        if (!adminDb || !adminAuth) {
+            console.error("Firebase Admin is not initialized");
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        }
+
         const authHeader = req.headers.get("Authorization");
         if (!authHeader?.startsWith("Bearer ")) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -71,6 +76,11 @@ export async function POST(req: NextRequest) {
 /** GET /api/session?token=xxx - 세션 검증 (Guest용) */
 export async function GET(req: NextRequest) {
     try {
+        if (!adminDb) {
+            console.error("adminDb is not initialized");
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        }
+
         const token = req.nextUrl.searchParams.get("token");
         if (!token) {
             return NextResponse.json({ error: "token required" }, { status: 400 });
