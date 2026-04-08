@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { customAlphabet } from "nanoid";
 
 export const dynamic = 'force-dynamic';
 
-// 랜덤 토큰 생성 (12자 영숫자)
+const CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+const nanoid = customAlphabet(CHARS, 12);
+
+// 랜덤 토큰 생성 (12자 영숫자) - 암호학적으로 안전한 nanoid 사용
 function generateToken(): string {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({ length: 12 }, () =>
-        chars[Math.floor(Math.random() * chars.length)]
-    ).join("");
+    return nanoid();
 }
 
 /** POST /api/session - 세션 생성 */
