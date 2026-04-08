@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Order, OrderRating } from "@/types";
 import { subscribeGuestOrders } from "@/lib/firebase/orders";
-import { ListOrdered, Clock, ChefHat, CheckCircle2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Clock, ChefHat, CheckCircle2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
