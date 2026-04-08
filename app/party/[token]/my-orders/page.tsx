@@ -8,7 +8,6 @@ import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
 export default function MyOrdersPage({ params }: { params: Promise<{ token: string }> }) {
-    // const [token, setToken] = useState(""); // Unused
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -17,7 +16,6 @@ export default function MyOrdersPage({ params }: { params: Promise<{ token: stri
 
     useEffect(() => {
         params.then((p) => {
-            // setToken(p.token); // Unused
             // 토큰으로 세션 ID 가져오기
             fetch(`/api/session?token=${p.token}`)
                 .then((res) => res.json())
