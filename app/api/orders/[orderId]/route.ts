@@ -31,11 +31,25 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             updatedAt: FieldValue.serverTimestamp(),
         };
 
-        // Host: 상태 변경 (Authorization 헤더 있을 때)
+        // Host: 상태 변경 (Authorization 필수)
         if (status) {
             const authHeader = req.headers.get("Authorization");
-            if (authHeader?.startsWith("Bearer ")) {
+            if (!authHeader?.startsWith("Bearer ")) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+
+            if (!adminAuth) {
+                return NextResponse.json(
+                    { error: "Internal Server Error" },
+                    { status: 500 }
+                );
+            }
+
+            try {
                 await adminAuth.verifyIdToken(authHeader.slice(7));
+            } catch (err) {
+                console.error("Token verification failed:", err);
+                return NextResponse.json({ error: "Invalid token" }, { status: 401 });
             }
             update.status = status;
         }
