@@ -38,8 +38,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Orders are paused" }, { status: 503 });
         }
 
-        // 칵테일 활성화 확인
-        const cocktailDoc = await adminDb.collection("cocktails").doc(cocktailId).get();
+        // 칵테일 활성화 확인 (호스트별 컬렉션에서 조회)
+        const cocktailDoc = await adminDb
+            .collection("hosts")
+            .doc(sessionData.hostUid)
+            .collection("cocktails")
+            .doc(cocktailId)
+            .get();
         if (!cocktailDoc.exists || !cocktailDoc.data()?.isActive) {
             return NextResponse.json({ error: "Cocktail not available" }, { status: 400 });
         }
