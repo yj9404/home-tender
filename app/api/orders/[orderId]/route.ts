@@ -59,10 +59,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             update.status = status;
         }
 
-        // Guest: 평가하기 (done 상태인 경우만)
+        // Guest: 평가하기 (done 또는 picked_up 상태인 경우)
         if (rating !== undefined) {
             const currentData = orderDoc.data();
-            if (currentData?.status !== "done") {
+            if (currentData?.status !== "done" && currentData?.status !== "picked_up") {
                 return NextResponse.json(
                     { error: "Can only rate completed orders" },
                     { status: 400 }

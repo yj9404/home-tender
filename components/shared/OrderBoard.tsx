@@ -1,18 +1,18 @@
 "use client";
 
-import { Order, OrderRating, OrderStatus } from "@/types";
-import { CheckCircle2, Clock, ChefHat, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Order, OrderRating } from "@/types";
+import { CheckCircle2, Clock, ChefHat, ThumbsUp, ThumbsDown, PackageCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
 interface OrderBoardProps {
     orders: Order[];
-    mode: "host" | "guest";
-    onStatusChange?: (orderId: string, status: OrderStatus) => void;
+    onPickup?: (orderId: string) => void;
     onRate?: (orderId: string, rating: OrderRating) => void;
 }
 
-export default function OrderBoard({ orders, mode, onStatusChange, onRate }: OrderBoardProps) {
+export default function OrderBoard({ orders, onPickup, onRate }: OrderBoardProps) {
+    // picked_up은 보드에서 제외
     const done = orders.filter((o) => o.status === "done");
     const pending = orders.filter((o) => o.status === "pending" || o.status === "making");
 
@@ -35,13 +35,7 @@ export default function OrderBoard({ orders, mode, onStatusChange, onRate }: Ord
                         </div>
                     ) : (
                         done.map((o) => (
-                            <BoardCard
-                                key={o.id}
-                                order={o}
-                                mode={mode}
-                                onStatusChange={onStatusChange}
-                                onRate={onRate}
-                            />
+                            <BoardCard key={o.id} order={o} onPickup={onPickup} onRate={onRate} />
                         ))
                     )}
                 </div>
@@ -64,13 +58,7 @@ export default function OrderBoard({ orders, mode, onStatusChange, onRate }: Ord
                         </div>
                     ) : (
                         pending.map((o) => (
-                            <BoardCard
-                                key={o.id}
-                                order={o}
-                                mode={mode}
-                                onStatusChange={onStatusChange}
-                                onRate={onRate}
-                            />
+                            <BoardCard key={o.id} order={o} onPickup={onPickup} onRate={onRate} />
                         ))
                     )}
                 </div>
@@ -81,13 +69,11 @@ export default function OrderBoard({ orders, mode, onStatusChange, onRate }: Ord
 
 function BoardCard({
     order,
-    mode,
-    onStatusChange,
+    onPickup,
     onRate,
 }: {
     order: Order;
-    mode: "host" | "guest";
-    onStatusChange?: (id: string, status: OrderStatus) => void;
+    onPickup?: (id: string) => void;
     onRate?: (id: string, rating: OrderRating) => void;
 }) {
     const timeStr = order.createdAt
@@ -146,30 +132,18 @@ function BoardCard({
                 </div>
             )}
 
-            {/* 호스트 액션 버튼 */}
-            {mode === "host" && !isDone && onStatusChange && (
-                <div className="flex gap-2 pt-0.5">
-                    {order.status === "pending" && (
-                        <button
-                            onClick={() => onStatusChange(order.id, "making")}
-                            className="flex-1 py-2 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
-                        >
-                            제조 시작
-                        </button>
-                    )}
-                    {order.status === "making" && (
-                        <button
-                            onClick={() => onStatusChange(order.id, "done")}
-                            className="flex-1 py-2 text-xs font-semibold rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-colors"
-                        >
-                            제조 완료
-                        </button>
-                    )}
-                </div>
+            {/* 픽업완료 버튼 (제조완료 항목에만) */}
+            {isDone && onPickup && (
+                <button
+                    onClick={() => onPickup(order.id)}
+                    className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors border border-blue-500/20"
+                >
+                    <PackageCheck className="w-3.5 h-3.5" /> 픽업완료
+                </button>
             )}
 
             {/* 게스트 평가 버튼 */}
-            {mode === "guest" && isDone && onRate && (
+            {onRate && isDone && (
                 <div className="flex items-center justify-between pt-2 border-t border-white/5">
                     <span className="text-xs text-gray-500">맛은 어떠셨나요?</span>
                     <div className="flex gap-1.5">

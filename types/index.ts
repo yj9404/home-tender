@@ -54,7 +54,7 @@ export interface Session {
 
 // ─── Order ────────────────────────────────────────────────────────────────────
 
-export type OrderStatus = "pending" | "making" | "done";
+export type OrderStatus = "pending" | "making" | "done" | "picked_up";
 export type OrderRating = "like" | "dislike" | null;
 
 export interface OrderCustomization {

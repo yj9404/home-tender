@@ -85,7 +85,7 @@ export default function HostBoardPage() {
         return () => unsub();
     }, [activeSession]);
 
-    const handleStatusChange = async (orderId: string, status: Order["status"]) => {
+    const handlePickup = async (orderId: string) => {
         if (!activeSession) return;
         try {
             const u = auth.currentUser;
@@ -97,12 +97,12 @@ export default function HostBoardPage() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ sessionId: activeSession.id, status }),
+                body: JSON.stringify({ sessionId: activeSession.id, status: "picked_up" }),
             });
             if (!res.ok) throw new Error("업데이트 실패");
         } catch (err) {
             console.error(err);
-            alert("상태 변경에 실패했습니다.");
+            alert("픽업 처리에 실패했습니다.");
         }
     };
 
@@ -133,8 +133,7 @@ export default function HostBoardPage() {
             </div>
             <OrderBoard
                 orders={orders}
-                mode="host"
-                onStatusChange={handleStatusChange}
+                onPickup={handlePickup}
             />
         </div>
     );
