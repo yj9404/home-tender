@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Cocktail, Ingredient } from "@/types";
-import { X } from "lucide-react";
+import { X, ImagePlus } from "lucide-react";
 import { getDocs, orderBy, query, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { uploadCocktailImage, DEFAULT_COCKTAIL_IMAGE } from "@/lib/firebase/storage";
 import MultiSelect from "./MultiSelect";
 
 interface CocktailModalProps {
@@ -29,6 +30,10 @@ export default function CocktailModal({ isOpen, onClose, onSave, cocktail, hostU
     const [sweetness, setSweetness] = useState(3);
     const [isActive, setIsActive] = useState(true);
     
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string>(DEFAULT_COCKTAIL_IMAGE);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -61,6 +66,7 @@ export default function CocktailModal({ isOpen, onClose, onSave, cocktail, hostU
             setFlavorTags((cocktail.flavorTags || []).join(", "));
             setSweetness(cocktail.sweetness || 3);
             setIsActive(cocktail.isActive ?? true);
+            setImagePreview(cocktail.imageUrl || DEFAULT_COCKTAIL_IMAGE);
         } else {
             setName("");
             setBaseSpirits([]);
@@ -74,16 +80,30 @@ export default function CocktailModal({ isOpen, onClose, onSave, cocktail, hostU
             setFlavorTags("");
             setSweetness(3);
             setIsActive(true);
+            setImagePreview(DEFAULT_COCKTAIL_IMAGE);
         }
+        setImageFile(null);
     }, [cocktail, isOpen]);
 
     if (!isOpen) return null;
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         const parseTags = (str: string) => str.split(",").map(s => s.trim()).filter(Boolean);
+
+        let finalImageUrl = cocktail?.imageUrl || DEFAULT_COCKTAIL_IMAGE;
+        if (imageFile) {
+            finalImageUrl = await uploadCocktailImage(hostUid, imageFile, cocktail?.id);
+        }
 
         const data: Partial<Cocktail> = {
             name: name.trim(),
@@ -100,7 +120,7 @@ export default function CocktailModal({ isOpen, onClose, onSave, cocktail, hostU
             flavorTags: parseTags(flavorTags),
             sweetness: Number(sweetness),
             isActive,
-            imageUrl: cocktail?.imageUrl || "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400&q=80",
+            imageUrl: finalImageUrl,
         };
 
         try {
@@ -128,6 +148,40 @@ export default function CocktailModal({ isOpen, onClose, onSave, cocktail, hostU
 
                 <div className="overflow-y-auto w-full custom-scrollbar">
                     <form onSubmit={handleSubmit} className="p-4 space-y-5" id="cocktail-form">
+                        <div>
+                            <label className="block text-sm font-semibold text-primary mb-2">대표 사진</label>
+                            <div className="flex items-center gap-4">
+                                <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-black/30 border border-white/10">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={imagePreview}
+                                        alt="칵테일 미리보기"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                        id="cocktail-image-input"
+                                    />
+                                    <label
+                                        htmlFor="cocktail-image-input"
+                                        className="flex items-center gap-2 cursor-pointer w-full py-2.5 px-4 rounded-lg border border-white/10 bg-black/20 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                                    >
+                                        <ImagePlus className="w-4 h-4" />
+                                        {imageFile ? imageFile.name : "사진 변경"}
+                                    </label>
+                                    <p className="text-xs text-gray-500 mt-1.5 pl-1">
+                                        사진 없으면 기본 이미지로 표시됩니다
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-semibold text-primary mb-1">칵테일명 *</label>
                             <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg p-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="예: 마가리타" />

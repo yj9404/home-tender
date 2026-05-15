@@ -29,16 +29,22 @@ export default function CocktailCard({
             <div
                 className={`w-20 h-24 rounded-xl flex-shrink-0 flex items-center justify-center relative overflow-hidden ${isAvailable ? "bg-gradient-to-tr from-primary/40 to-purple-500/40" : "bg-gray-600/40"
                     }`}
-                style={isAvailable && cocktail.imageUrl ? { backgroundImage: `url(${cocktail.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
             >
-                {(!cocktail.imageUrl || !isAvailable) && (
-                    <span className={`text-2xl font-bold ${isAvailable ? "text-white/50" : "text-white/30"}`}>
+                {cocktail.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={cocktail.imageUrl}
+                        alt={cocktail.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+                ) : (
+                    <span className={`text-2xl font-bold z-10 ${isAvailable ? "text-white/50" : "text-white/30"}`}>
                         {firstLetter}
                     </span>
                 )}
 
                 {!isAvailable && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
                         <span className="text-[10px] font-bold text-red-300 bg-red-900/80 px-2 py-1 rounded shadow-lg border border-red-500/30">
                             SOLD OUT
                         </span>
