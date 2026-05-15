@@ -92,7 +92,7 @@ export default function GuestLayout({
     ];
 
     if (needsNickname) {
-        return <NicknameModal onComplete={(name) => setNeedsNickname(false)} />;
+        return <NicknameModal onComplete={() => setNeedsNickname(false)} />;
     }
 
     return (

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
-import { Martini, Settings2, Share2, LogOut, BookOpen } from "lucide-react";
+import { Martini, Settings2, Share2, LogOut, BookOpen, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { signOutUser } from "@/lib/firebase/auth";
 
@@ -36,14 +36,15 @@ export default function HostLayout({
     };
 
     const navItems = [
-        { name: "주문 큐", path: "/host", icon: Martini },
-        { name: "메뉴(기주)", path: "/host/cocktails", icon: BookOpen },
-        { name: "재료 관리", path: "/host/stock", icon: Settings2 },
-        { name: "초대 링크", path: "/host/session", icon: Share2 },
+        { name: "제조 현황", path: "/host/board", nameEn: "Board", icon: LayoutDashboard },
+        { name: "주문 큐", path: "/host", nameEn: "Queue", icon: Martini, exact: true },
+        { name: "메뉴(기주)", path: "/host/cocktails", nameEn: "Recipe", icon: BookOpen },
+        { name: "재료 관리", path: "/host/stock", nameEn: "Stock", icon: Settings2 },
+        { name: "초대 링크", path: "/host/session", nameEn: "Invite", icon: Share2 },
     ];
 
     return (
-        <div className="max-w-md mx-auto min-h-screen border-x border-white/5 relative bg-background/50 flex flex-col pt-4 pb-24">
+        <div className="max-w-5xl mx-auto min-h-screen border-x border-white/5 relative bg-background/50 flex flex-col pt-4 pb-24">
 
             {/* Header */}
             <header className="glass-panel p-4 flex items-center justify-between sticky top-0 z-50 rounded-b-2xl mx-2 mb-6 shadow-lg">
@@ -69,23 +70,19 @@ export default function HostLayout({
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md glass-panel border-t border-white/10 flex justify-around items-center p-4 z-40 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+            <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md glass-panel border-t border-white/10 flex justify-around items-center p-3 z-40 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
                 {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.path;
-                    let nameEn = "Queue";
-                    if (item.name === "메뉴(기주)") nameEn = "Recipe";
-                    if (item.name === "재료 관리") nameEn = "Stock";
-                    if (item.name === "초대 링크") nameEn = "Invite";
+                    const isActive = item.exact ? pathname === item.path : pathname.startsWith(item.path);
 
                     return (
                         <Link
                             key={item.path}
                             href={item.path}
-                            className={`flex flex-col items-center gap-1.5 transition-colors relative ${isActive ? "text-primary hover:text-primary-hover" : "text-gray-400 hover:text-white"}`}
+                            className={`flex flex-col items-center gap-1 transition-colors relative ${isActive ? "text-primary hover:text-primary-hover" : "text-gray-400 hover:text-white"}`}
                         >
-                            <Icon className="w-6 h-6" />
-                            <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>{nameEn}</span>
+                            <Icon className="w-5 h-5" />
+                            <span className={`text-[9px] ${isActive ? "font-bold" : "font-medium"}`}>{item.nameEn}</span>
                         </Link>
                     );
                 })}
