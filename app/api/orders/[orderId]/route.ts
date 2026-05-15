@@ -8,6 +8,11 @@ type Params = { params: Promise<{ orderId: string }> };
 /** PATCH /api/orders/[orderId] - 주문 상태/평가 변경 */
 export async function PATCH(req: NextRequest, { params }: Params) {
     try {
+        if (!adminDb || !adminAuth) {
+            console.error("Firebase Admin is not initialized");
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        }
+
         const { orderId } = await params;
         const body: UpdateOrderPayload & { sessionId: string } = await req.json();
         const { sessionId, status, rating } = body;
@@ -31,11 +36,25 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             updatedAt: FieldValue.serverTimestamp(),
         };
 
-        // Host: 상태 변경 (Authorization 헤더 있을 때)
+        // Host: 상태 변경 (Authorization 필수)
         if (status) {
             const authHeader = req.headers.get("Authorization");
-            if (authHeader?.startsWith("Bearer ")) {
+            if (!authHeader?.startsWith("Bearer ")) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+
+            if (!adminAuth) {
+                return NextResponse.json(
+                    { error: "Internal Server Error" },
+                    { status: 500 }
+                );
+            }
+
+            try {
                 await adminAuth.verifyIdToken(authHeader.slice(7));
+            } catch (err) {
+                console.error("Token verification failed:", err);
+                return NextResponse.json({ error: "Invalid token" }, { status: 401 });
             }
             update.status = status;
         }
