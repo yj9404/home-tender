@@ -19,6 +19,7 @@ export default function GuestLayout({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [needsNickname, setNeedsNickname] = useState(false);
+    const [guestName, setGuestName] = useState<string>("");
 
     useEffect(() => {
         async function load() {
@@ -42,11 +43,17 @@ export default function GuestLayout({
         }
         load();
 
-        // 닉네임 체크
-        if (!localStorage.getItem("ht_guestName")) {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // params는 매 렌더마다 새 Promise 객체 참조 → 의존성에 넣으면 무한루프
+
+    useEffect(() => {
+        const stored = localStorage.getItem("ht_guestName");
+        if (!stored) {
             setNeedsNickname(true);
+        } else {
+            setGuestName(stored);
         }
-    }, [params]);
+    }, []);
 
     if (loading) {
         return (
@@ -92,7 +99,15 @@ export default function GuestLayout({
     ];
 
     if (needsNickname) {
-        return <NicknameModal onComplete={() => setNeedsNickname(false)} />;
+        return (
+            <NicknameModal
+                token={token}
+                onComplete={(name) => {
+                    setGuestName(name);
+                    setNeedsNickname(false);
+                }}
+            />
+        );
     }
 
     return (
@@ -112,9 +127,13 @@ export default function GuestLayout({
                         <span className="font-bold tracking-tight">HomeTender</span>
                     </Link>
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-primary">
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black tracking-widest uppercase px-2.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-primary">
                         Guest
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-gray-200 animate-[fadeIn_0.3s_ease-out]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="max-w-[80px] truncate">{guestName}</span>
                     </span>
                 </div>
             </header>

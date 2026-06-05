@@ -22,7 +22,18 @@ export default function AIBartenderPage({ params }: { params: Promise<{ token: s
 
     useEffect(() => {
         params.then((p) => setToken(p.token));
-    }, [params]);
+
+        const savedName = localStorage.getItem("ht_guestName");
+        if (savedName) {
+            setMessages([
+                {
+                    role: "model",
+                    text: `안녕하세요 ${savedName}님! 오늘의 일일 바텐더입니다. 🍹\n어떤 스타일의 칵테일을 원하시나요? (예: 달달하고 도수 낮은 거, 시원하고 상큼한 거)`,
+                },
+            ]);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // params는 매 렌더마다 새 Promise 객체 참조 → 의존성에 넣으면 무한루프
 
     useEffect(() => {
         endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });

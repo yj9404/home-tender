@@ -36,7 +36,8 @@ export default function GuestMenuPage({ params }: { params: Promise<{ token: str
                 console.error("Failed to resolve hostUid from session:", err);
             }
         });
-    }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // params는 매 렌더마다 새 Promise 객체 참조 → 의존성에 넣으면 무한루프
 
     // hostUid 확정 후 해당 호스트 칵테일 구독
     useEffect(() => {

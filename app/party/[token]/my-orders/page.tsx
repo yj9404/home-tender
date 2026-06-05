@@ -10,9 +10,15 @@ import { ko } from "date-fns/locale";
 export default function MyOrdersPage({ params }: { params: Promise<{ token: string }> }) {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [guestName, setGuestName] = useState("");
 
     // 세션 ID 추출 (토큰 기반)
     const [sessionId, setSessionId] = useState<string>("");
+
+    useEffect(() => {
+        const savedName = localStorage.getItem("ht_guestName");
+        if (savedName) setGuestName(savedName);
+    }, []);
 
     useEffect(() => {
         params.then((p) => {
@@ -23,7 +29,8 @@ export default function MyOrdersPage({ params }: { params: Promise<{ token: stri
                     if (data.sessionId) setSessionId(data.sessionId);
                 });
         });
-    }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // params는 매 렌더마다 새 Promise 객체 참조 → 의존성에 넣으면 무한루프
 
     useEffect(() => {
         if (!sessionId) return;
@@ -63,7 +70,7 @@ export default function MyOrdersPage({ params }: { params: Promise<{ token: stri
             <div className="text-center space-y-2 mb-8 animate-[slide-up_0.5s_ease-out]">
                 <h1 className="text-3xl font-bold tracking-tight">Status</h1>
                 <p className="text-gray-400 text-sm">
-                    주문하신 칵테일의 진행 상태를 확인할 수 있습니다.
+                    <span className="text-primary font-bold">{guestName || "손님"}</span>님이 주문하신 칵테일의 진행 상태를 확인할 수 있습니다.
                 </p>
             </div>
 
