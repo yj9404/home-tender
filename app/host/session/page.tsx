@@ -14,6 +14,15 @@ export default function HostSessionPage() {
     const [activeSession, setActiveSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [expiresAtInput, setExpiresAtInput] = useState("");
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        const d = new Date();
+        d.setHours(d.getHours() + 12);
+        setExpiresAtInput(format(d, "yyyy-MM-dd'T'HH:mm"));
+    }, []);
 
     useEffect(() => {
         if (!user) return;
@@ -49,7 +58,13 @@ export default function HostSessionPage() {
 
             const res = await fetch("/api/session", {
                 method: "POST",
-                headers: { Authorization: `Bearer ${idToken}` },
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({
+                    expiresAt: expiresAtInput ? new Date(expiresAtInput).toISOString() : undefined,
+                }),
             });
 
             if (!res.ok) throw new Error("세션 생성 실패");
@@ -89,10 +104,16 @@ export default function HostSessionPage() {
         if (!confirm("정말 현재 파티를 종료하시겠습니까? (이 작업은 되돌릴 수 없습니다.)")) return;
         try {
             setLoading(true);
-            const sessionRef = doc(db, "sessions", activeSession.id);
-            await updateDoc(sessionRef, {
-                expiresAt: new Date(Date.now() - 1000) // 과거 시간으로 덮어씌워 강제 만료
+            const idToken = await auth.currentUser?.getIdToken();
+            const res = await fetch("/api/session", {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${idToken}`,
+                },
             });
+
+            if (!res.ok) throw new Error("세션 종료 실패");
+
             setActiveSession(null);
             alert("파티가 종료되었습니다.");
         } catch (err) {
@@ -123,6 +144,24 @@ export default function HostSessionPage() {
                     <p className="text-sm text-gray-400 mb-6">
                         링크를 생성하면 손님들이 메뉴를 고르고 커스텀 주문을 할 수 있습니다.
                     </p>
+
+                    {/* 종료 날짜/시간 설정 */}
+                    <div className="w-full mb-6 text-left">
+                        <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                            파티 종료 일시
+                        </label>
+                        <input
+                            type="datetime-local"
+                            value={expiresAtInput}
+                            min={mounted ? format(new Date(), "yyyy-MM-dd'T'HH:mm") : ""}
+                            onChange={(e) => setExpiresAtInput(e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                        />
+                        <p className="text-[11px] text-gray-500 mt-1.5 pl-1">
+                            지정된 시간이 지나면 손님들이 더 이상 주문할 수 없습니다.
+                        </p>
+                    </div>
+
                     <button onClick={createSession} className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] disabled:opacity-50" disabled={loading}>
                         <Share2 className="w-4 h-4 text-white" /> 새로운 파티 시작
                     </button>
