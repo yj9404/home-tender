@@ -5,7 +5,7 @@ import { Order, Cocktail } from "@/types";
 import { subscribeOrders } from "@/lib/firebase/orders";
 import { auth } from "@/lib/firebase/config";
 import { db } from "@/lib/firebase/config";
-import { Clock, CheckCircle2, ChefHat, Info, X } from "lucide-react";
+import { Clock, CheckCircle2, ChefHat, Info, X, PackageCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -16,7 +16,7 @@ interface OrderProps {
 function playOrderAlert() {
     try {
         const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-        const notes = [880, 1108.73, 1318.51]; // A5 → C#6 → E6 (상쾌한 3화음)
+        const notes = [880, 1108.73, 1318.51, 1479.98, 1318.51, 1108.73]; // A5→C#6→E6→F#6→E6→C#6
         notes.forEach((freq, i) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -126,14 +126,15 @@ export default function OrderQueue({ sessionId }: OrderProps) {
                 </div>
             </section>
 
-            {/* 완료됨 */}
+            {/* 픽업 대기 (제조완료) */}
             <section>
-                <h3 className="flex items-center gap-2 text-lg font-bold text-green-400 mb-4 opacity-70">
-                    <CheckCircle2 className="w-5 h-5" /> 최근 완료 ({done.length})
+                <h3 className="flex items-center gap-2 text-lg font-bold text-blue-400 mb-4">
+                    <PackageCheck className="w-5 h-5" /> 픽업 대기 ({done.length})
                 </h3>
-                <div className="opacity-70 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {done.length === 0 && <p className="text-gray-500 text-sm">픽업 대기 중인 주문이 없습니다.</p>}
                     {done.map((o) => (
-                        <OrderCard key={o.id} order={o} onStatus={handleStatusChange} onViewRecipe={openRecipeModal} isPast />
+                        <OrderCard key={o.id} order={o} onStatus={handleStatusChange} onViewRecipe={openRecipeModal} />
                     ))}
                 </div>
             </section>
@@ -265,6 +266,14 @@ function OrderCard({
                             className="flex-1 py-3 bg-green-500/20 text-green-400 font-semibold rounded-xl hover:bg-green-500 hover:text-black transition-colors text-sm shadow-sm"
                         >
                             제조 완료
+                        </button>
+                    )}
+                    {order.status === "done" && (
+                        <button
+                            onClick={() => onStatus(order.id, "picked_up")}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-blue-500/20 text-blue-400 font-semibold rounded-xl hover:bg-blue-500 hover:text-white transition-colors text-sm shadow-sm border border-blue-500/20"
+                        >
+                            <PackageCheck className="w-4 h-4" /> 픽업 완료
                         </button>
                     )}
                 </div>

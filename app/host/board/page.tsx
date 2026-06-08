@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Order } from "@/types";
 import { subscribeOrders } from "@/lib/firebase/orders";
-import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/context/AuthContext";
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -12,36 +11,11 @@ import OrderBoard from "@/components/shared/OrderBoard";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 
-function playOrderAlert() {
-    try {
-        const ctx = new (window.AudioContext ||
-            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-        const notes = [880, 1108.73, 1318.51];
-        notes.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
-            gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12);
-            gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i * 0.12 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.4);
-            osc.start(ctx.currentTime + i * 0.12);
-            osc.stop(ctx.currentTime + i * 0.12 + 0.4);
-        });
-    } catch {
-        // ignore
-    }
-}
-
 export default function HostBoardPage() {
     const { user } = useAuth();
     const [activeSession, setActiveSession] = useState<Session | null>(null);
     const [sessionLoading, setSessionLoading] = useState(true);
     const [orders, setOrders] = useState<Order[]>([]);
-    const knownOrderIds = useRef<Set<string>>(new Set());
-    const isInitialLoad = useRef(true);
 
     useEffect(() => {
         if (!user) return;
@@ -72,39 +46,10 @@ export default function HostBoardPage() {
     useEffect(() => {
         if (!activeSession) return;
         const unsub = subscribeOrders(activeSession.id, (data) => {
-            if (!isInitialLoad.current) {
-                const hasNewPending = data.some(
-                    (o) => o.status === "pending" && !knownOrderIds.current.has(o.id)
-                );
-                if (hasNewPending) playOrderAlert();
-            }
-            knownOrderIds.current = new Set(data.map((o) => o.id));
-            isInitialLoad.current = false;
             setOrders(data);
         });
         return () => unsub();
     }, [activeSession]);
-
-    const handlePickup = async (orderId: string) => {
-        if (!activeSession) return;
-        try {
-            const u = auth.currentUser;
-            if (!u) return alert("로그인이 필요합니다.");
-            const token = await u.getIdToken();
-            const res = await fetch(`/api/orders/${orderId}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ sessionId: activeSession.id, status: "picked_up" }),
-            });
-            if (!res.ok) throw new Error("업데이트 실패");
-        } catch (err) {
-            console.error(err);
-            alert("픽업 처리에 실패했습니다.");
-        }
-    };
 
     if (sessionLoading) {
         return <div className="animate-pulse text-gray-500 text-center mt-10">세션 정보를 불러오는 중...</div>;
@@ -133,7 +78,6 @@ export default function HostBoardPage() {
             </div>
             <OrderBoard
                 orders={orders}
-                onPickup={handlePickup}
             />
         </div>
     );
