@@ -99,3 +99,19 @@ export interface AIRecommendPayload {
   message: string;
   history: Array<{ role: "user" | "model"; text: string }>;
 }
+
+// ─── Guestbook ────────────────────────────────────────────────────────────────
+
+export interface GuestbookEntry {
+  id: string;
+  sessionId: string;
+  authorName: string;
+  message: string;
+  createdAt: string; // ISO string (API 응답용)
+}
+
+export interface CreateGuestbookPayload {
+  sessionToken: string;
+  authorName: string;
+  message: string;
+}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { GlassWater, ListOrdered, BotMessageSquare, AlertCircle } from "lucide-react";
+import { GlassWater, ListOrdered, BookHeart, AlertCircle } from "lucide-react";
 import NicknameModal from "@/components/guest/NicknameModal";
 
 export default function GuestLayout({
@@ -95,7 +95,7 @@ export default function GuestLayout({
     const navItems = [
         { name: "메뉴판", path: `/party/${token}`, icon: GlassWater, exact: true },
         { name: "내 주문", path: `/party/${token}/my-orders`, icon: ListOrdered },
-        { name: "AI 추천", path: `/party/${token}/ai`, icon: BotMessageSquare },
+        { name: "방명록", path: `/party/${token}/guestbook`, icon: BookHeart },
     ];
 
     if (needsNickname) {
@@ -151,7 +151,7 @@ export default function GuestLayout({
 
                     let nameEn = "Menu";
                     if (item.name === "내 주문") nameEn = "Status";
-                    if (item.name === "AI 추천") nameEn = "AI Chat";
+                    if (item.name === "방명록") nameEn = "Guestbook";
 
                     return (
                         <Link
