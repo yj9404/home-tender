@@ -100,19 +100,6 @@ export default function OrderQueue({ sessionId }: OrderProps) {
 
     return (
         <div className="flex flex-col gap-10 mt-2">
-            {/* 제조 중 */}
-            <section>
-                <h3 className="flex items-center gap-2 text-lg font-bold text-primary mb-4">
-                    <ChefHat className="w-5 h-5" /> 제조 중 ({making.length})
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {making.length === 0 && <p className="text-gray-500 text-sm">현재 제조 중인 주문이 없습니다.</p>}
-                    {making.map((o) => (
-                        <OrderCard key={o.id} order={o} onStatus={handleStatusChange} onViewRecipe={openRecipeModal} />
-                    ))}
-                </div>
-            </section>
-
             {/* 대기 중 */}
             <section>
                 <h3 className="flex items-center gap-2 text-lg font-bold text-indigo-400 mb-4">
@@ -121,6 +108,19 @@ export default function OrderQueue({ sessionId }: OrderProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {pending.length === 0 && <p className="text-gray-500 text-sm">대기 중인 주문이 없습니다.</p>}
                     {pending.map((o) => (
+                        <OrderCard key={o.id} order={o} onStatus={handleStatusChange} onViewRecipe={openRecipeModal} />
+                    ))}
+                </div>
+            </section>
+
+            {/* 제조 중 */}
+            <section>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-primary mb-4">
+                    <ChefHat className="w-5 h-5" /> 제조 중 ({making.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {making.length === 0 && <p className="text-gray-500 text-sm">현재 제조 중인 주문이 없습니다.</p>}
+                    {making.map((o) => (
                         <OrderCard key={o.id} order={o} onStatus={handleStatusChange} onViewRecipe={openRecipeModal} />
                     ))}
                 </div>
