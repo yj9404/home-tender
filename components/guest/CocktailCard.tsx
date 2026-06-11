@@ -57,8 +57,8 @@ export default function CocktailCard({
                     <h3 className={`text-lg font-bold transition-colors ${isAvailable ? "text-white group-hover:text-primary" : "text-white/50"}`}>
                         {cocktail.name}
                     </h3>
-                    <span className={`text-[10px] px-2.5 py-1 rounded-full border ${isAvailable ? "font-bold text-white bg-white/10 border-white/5" : "font-medium text-gray-500 bg-white/5 border-transparent"}`}>
-                        {cocktail.abv.includes('%') ? cocktail.abv : `${cocktail.abv}%`}
+                    <span className={`text-xs px-2.5 py-0.5 rounded-full border font-semibold tracking-wide ${isAvailable ? "text-sky-200 bg-sky-500/15 border-sky-400/30" : "text-gray-500 bg-white/5 border-transparent"}`}>
+                        {cocktail.abv.includes('%') ? cocktail.abv : `${cocktail.abv}%`} ABV
                     </span>
                 </div>
 
@@ -69,7 +69,7 @@ export default function CocktailCard({
                         </p>
                         <div className="flex flex-wrap gap-1 mt-auto pt-2">
                             {cocktail.flavorTags.slice(0, 3).map((tag, i) => (
-                                <span key={i} className="text-[10px] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full shadow-inner">
+                                <span key={i} className="text-[11px] font-semibold text-primary">
                                     #{tag}
                                 </span>
                             ))}

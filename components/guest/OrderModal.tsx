@@ -118,12 +118,21 @@ export default function OrderModal({
                     <X className="w-5 h-5" />
                 </button>
 
-                <h2 className="text-3xl font-black mb-1 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                    {cocktail.name}
-                </h2>
-                <p className="text-sm text-gray-400 mb-6 flex gap-2 font-medium">
-                    <span>{cocktail.abv.includes('%') ? cocktail.abv : `${cocktail.abv}%`} ABV</span> • <span>{cocktail.flavorTags.join(", ")}</span>
-                </p>
+                <div className="flex items-end gap-2 mb-2">
+                    <h2 className="text-3xl font-black bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent leading-tight">
+                        {cocktail.name}
+                    </h2>
+                    <span className="mb-0.5 shrink-0 text-xs font-semibold tracking-wide text-sky-200 bg-sky-500/15 border border-sky-400/30 px-2.5 py-0.5 rounded-full">
+                        {cocktail.abv.includes('%') ? cocktail.abv : `${cocktail.abv}%`} ABV
+                    </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-6">
+                    {cocktail.flavorTags.map((tag, i) => (
+                        <span key={i} className="text-[11px] font-semibold text-primary">
+                            #{tag}
+                        </span>
+                    ))}
+                </div>
 
                 <div className="space-y-6">
                     <div>
